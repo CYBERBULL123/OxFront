@@ -192,21 +192,30 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="w-full h-[400px] rounded-lg bg-white shadow-md dark:bg-gray-800">
-          <MapContainer center={[51.505, -0.09]} zoom={2} scrollWheelZoom={true} style={{ width: '100%', height: '100%' }}>
-            <TileLayer url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png" />
-            {attackLocations.map((loc, index) => (
-              <Marker key={index} position={[loc.lat, loc.lng]} icon={attackIcon}>
-                <Popup>
-                  <strong>{loc.name}</strong><br />
-                  {loc.details}<br />
-                  <small>{loc.region}, {loc.country}</small>
-                </Popup>
-              </Marker>
-            ))}
-            <Polyline positions={polylinePositions} color="blue" />
-          </MapContainer>
-        </div>
+          <div className="p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
+            <h4 className="mb-4 font-semibold text-black-400">Attack Locations</h4>
+            <MapContainer
+              center={[51.505, -0.09]}
+              zoom={2}
+              style={{ height: '500px', width: '100%' }}
+              className="rounded-lg"
+            >
+              {/* Hacker-like dark theme */}
+              <TileLayer url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png" />
+
+              {/* Attack Markers */}
+              {attackLocations.map((loc, index) => (
+                <Marker key={index} position={[loc.lat, loc.lng]} icon={attackIcon}>
+                  <Popup>
+                    <strong>{loc.name}</strong>
+                    <br />
+                    {loc.details}
+                  </Popup>
+                  <LeafletTooltip>{loc.name}</LeafletTooltip>
+                </Marker>
+              ))}
+            </MapContainer>
+          </div>
       </motion.div>
     </Layout>
   );
