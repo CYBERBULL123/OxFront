@@ -1,9 +1,10 @@
 'use client'
 
 import React from 'react';
-import Layout from '../../components/Layout';
+// import Layout from '../../components/Layout';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import {
   BarChart,
   Bar,
@@ -27,9 +28,18 @@ import {
   ScatterChart,
   Scatter,
 } from 'recharts';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip } from 'react-leaflet';
+// import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip } from 'react-leaflet';
 import { Shield, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+
+const Layout = dynamic(() => import('../../components/Layout'), { ssr: false });
+const MapContainer = dynamic(() => import('react-leaflet').then((mod) => mod.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import('react-leaflet').then((mod) => mod.TileLayer), { ssr: false });
+const Marker = dynamic(() => import('react-leaflet').then((mod) => mod.Marker), { ssr: false });
+const Popup = dynamic(() => import('react-leaflet').then((mod) => mod.Popup), { ssr: false });
+const LeafletTooltip = dynamic(() => import('react-leaflet').then((mod) => mod.Tooltip), { ssr: false });
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 const threatData = [
