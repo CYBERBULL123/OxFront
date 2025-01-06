@@ -3,6 +3,7 @@
 import React from 'react';
 import Layout from '../../components/Layout';
 import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import {
   BarChart,
   Bar,
@@ -29,7 +30,6 @@ import {
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip } from 'react-leaflet';
 import { Shield, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 const threatData = [
@@ -102,14 +102,18 @@ const attackLocations = [
 
 // Custom Icon
 const attackIcon = new L.Icon({
-  iconUrl: 'https://i.ibb.co/vdBy68m/hacker.png', // Replace with your custom icon URL
+  iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg', // Replace with your custom icon URL
   iconSize: [32, 32],
   iconAnchor: [16, 32],
   popupAnchor: [0, -32],
 });
 
 export default function Dashboard() {
-  const polylinePositions = attackLocations.map((loc) => [loc.lat, loc.lng]);
+  const [isBrowser, setIsBrowser] = useState(false);
+
+  useEffect(() => {
+    setIsBrowser(typeof window !== 'undefined');
+  }, []);
 
   return (
     <Layout>
