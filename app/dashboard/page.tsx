@@ -29,6 +29,7 @@ import {
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip } from 'react-leaflet';
 import { Shield, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
+import L from 'leaflet'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 const threatData = [
