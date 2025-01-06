@@ -8,6 +8,7 @@ import {
   Bar,
   XAxis,
   YAxis,
+  ZAxis,
   CartesianGrid,
   Tooltip,
   Legend,
@@ -52,6 +53,23 @@ const radarData = [
   { category: 'Database', score: 86 },
   { category: 'Endpoint', score: 99 },
   { category: 'Cloud', score: 85 },
+];
+
+const lineData = [
+  { name: 'Jan', Mitigations: 2400, Active: 1500 },
+  { name: 'Feb', Mitigations: 1398, Active: 2000 },
+  { name: 'Mar', Mitigations: 9800, Active: 4500 },
+  { name: 'Apr', Mitigations: 3908, Active: 3000 },
+  { name: 'May', Mitigations: 4800, Active: 3500 },
+  { name: 'Jun', Mitigations: 3800, Active: 4000 },
+];
+
+const scatterData = [
+  { x: 100, y: 200, z: 200, name: "Low Threat" },
+  { x: 120, y: 100, z: 260, name: "Medium Threat" },
+  { x: 170, y: 300, z: 400, name: "High Threat" },
+  { x: 140, y: 250, z: 280, name: "Critical Threat" },
+  { x: 150, y: 400, z: 500, name: "Severe Threat" },
 ];
 
 const attackLocations = [
@@ -183,40 +201,128 @@ export default function Dashboard() {
             <h4 className="mb-4 font-semibold text-gray-800 dark:text-gray-300">Security Coverage</h4>
             <ResponsiveContainer width="100%" height={300}>
               <RadarChart data={radarData} outerRadius={90}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="category" />
-                <PolarRadiusAxis />
-                <Radar name="Security" dataKey="score" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+                <PolarGrid strokeDasharray="3 3" stroke="#ccc" />
+                <PolarAngleAxis 
+                  dataKey="category" 
+                  stroke="#4a5568" 
+                  tick={{ fill: '#4a5568', fontSize: 12 }}
+                />
+                <PolarRadiusAxis 
+                  angle={30} 
+                  stroke="#d2d6dc" 
+                  tick={{ fill: '#d2d6dc', fontSize: 10 }}
+                />
+                <Radar 
+                  name="Security" 
+                  dataKey="score" 
+                  stroke="#4c51bf" 
+                  fill="#667eea" 
+                  fillOpacity={0.7} 
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: '#2d3748',
+                    borderRadius: '8px',
+                    border: 'none',
+                    padding: '8px',
+                  }}
+                  labelStyle={{
+                    color: '#a0aec0',
+                  }}
+                  itemStyle={{
+                    color: '#ffffff',
+                  }}
+                  formatter={(value, name) => [`${value}`, `${name}`]}
+                  labelFormatter={(label) => `Category: ${label}`}
+                />
               </RadarChart>
             </ResponsiveContainer>
           </div>
+
+          <div className="p-6 bg-white rounded-lg shadow-lg dark:bg-gray-800">
+          <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-gray-300">
+            Cybersecurity Threat Landscape
+          </h4>
+          <ResponsiveContainer width="100%" height={300}>
+            <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+              <XAxis
+                type="number"
+                dataKey="x"
+                name="Severity"
+                tick={{ fill: "#a0aec0", fontSize: 12 }}
+                label={{ value: "Threat Severity", position: "insideBottom", offset: -5, fill: "#a0aec0" }}
+              />
+              <YAxis
+                type="number"
+                dataKey="y"
+                name="Impact"
+                tick={{ fill: "#a0aec0", fontSize: 12 }}
+                label={{ value: "Threat Impact", angle: -90, position: "insideLeft", fill: "#a0aec0" }}
+              />
+              <ZAxis
+                type="number"
+                dataKey="z"
+                name="Threat Size"
+                range={[100, 500]}
+              />
+              <Tooltip
+                cursor={{ strokeDasharray: "3 3" }}
+                formatter={(value, name) => `${value} (${name})`}
+              />
+              <Legend
+                verticalAlign="top"
+                wrapperStyle={{ color: "#a0aec0", fontSize: 12 }}
+              />
+              <Scatter
+                name="Threat Data Points"
+                data={scatterData}
+                fill="#e53e3e"
+                shape="circle"
+              />
+            </ScatterChart>
+          </ResponsiveContainer>
         </div>
 
           <div className="p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
-            <h4 className="mb-4 font-semibold text-black-400">Attack Locations</h4>
-            <MapContainer
-              center={[51.505, -0.09]}
-              zoom={2}
-              style={{ height: '500px', width: '100%' }}
-              className="rounded-lg"
-            >
-              {/* Hacker-like dark theme */}
-              <TileLayer url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png" />
-
-              {/* Attack Markers */}
-              {attackLocations.map((loc, index) => (
-                <Marker key={index} position={[loc.lat, loc.lng]} icon={attackIcon}>
-                  <Popup>
-                    <strong>{loc.name}</strong>
-                    <br />
-                    {loc.details}
-                  </Popup>
-                  <LeafletTooltip>{loc.name}</LeafletTooltip>
-                </Marker>
-              ))}
-            </MapContainer>
+              <h4 className="mb-4 font-semibold text-gray-800 dark:text-gray-300">Mitigations vs Active Alerts</h4>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={lineData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="Mitigations" stroke="#8884d8" />
+                  <Line type="monotone" dataKey="Active" stroke="#82ca9d" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
+
+          <div className="p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
+          <h4 className="mb-4 font-semibold text-gray-800 dark:text-gray-300">Attack Locations</h4>
+          <MapContainer
+            center={[51.505, -0.09]}
+            zoom={2}
+            style={{ height: '500px', width: '100%', zIndex: 0 }}
+            className="rounded-lg"
+          >
+            <TileLayer url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png" />
+            {attackLocations.map((loc, index) => (
+              <Marker key={index} position={[loc.lat, loc.lng]} icon={attackIcon}>
+                <Popup>
+                  <strong>{loc.name}</strong>
+                  <br />
+                  {loc.details}
+                </Popup>
+                <LeafletTooltip>{loc.name}</LeafletTooltip>
+              </Marker>
+            ))}
+          </MapContainer>
+        </div>
       </motion.div>
     </Layout>
   );
 }
+
