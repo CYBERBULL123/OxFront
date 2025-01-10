@@ -1,10 +1,9 @@
-'use client'
+'use client';
 
+import dynamic from 'next/dynamic';
 import React from 'react';
-// import Layout from '../../components/Layout';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
 import {
   BarChart,
   Bar,
@@ -27,12 +26,14 @@ import {
   PolarRadiusAxis,
   ScatterChart,
   Scatter,
+  AreaChart,
+  Area,
+  RadialBarChart,
+  RadialBar,
 } from 'recharts';
-// import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip } from 'react-leaflet';
-import { Shield, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, Activity, Globe, Users, Server, Clock } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-
 
 const Layout = dynamic(() => import('../../components/Layout'), { ssr: false });
 const MapContainer = dynamic(() => import('react-leaflet').then((mod) => mod.MapContainer), { ssr: false });
@@ -81,6 +82,22 @@ const scatterData = [
   { x: 170, y: 300, z: 400, name: "High Threat" },
   { x: 140, y: 250, z: 280, name: "Critical Threat" },
   { x: 150, y: 400, z: 500, name: "Severe Threat" },
+];
+
+const areaData = [
+  { name: 'Jan', Threats: 4000, Mitigations: 2400 },
+  { name: 'Feb', Threats: 3000, Mitigations: 1398 },
+  { name: 'Mar', Threats: 2000, Mitigations: 9800 },
+  { name: 'Apr', Threats: 2780, Mitigations: 3908 },
+  { name: 'May', Threats: 1890, Mitigations: 4800 },
+  { name: 'Jun', Threats: 2390, Mitigations: 3800 },
+];
+
+const radialData = [
+  { name: 'Network', value: 80, fill: '#0088FE' },
+  { name: 'Application', value: 70, fill: '#00C49F' },
+  { name: 'Database', value: 90, fill: '#FFBB28' },
+  { name: 'Endpoint', value: 85, fill: '#FF8042' },
 ];
 
 const attackLocations = [
@@ -136,6 +153,7 @@ export default function Dashboard() {
           Cybersecurity Dashboard
         </h2>
 
+        {/* Key Metrics */}
         <div className="grid gap-6 mb-8 md:grid-cols-2 xl:grid-cols-4">
           <div className="flex items-center p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
             <div className="p-3 mr-4 text-orange-500 bg-orange-100 rounded-full dark:text-orange-100 dark:bg-orange-500">
@@ -175,7 +193,9 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Advanced Visualizations */}
         <div className="grid gap-6 mb-8 md:grid-cols-2 xl:grid-cols-3">
+          {/* Threats vs Mitigations */}
           <div className="p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
             <h4 className="mb-4 font-semibold text-gray-800 dark:text-gray-300">Threats vs Mitigations</h4>
             <ResponsiveContainer width="100%" height={300}>
@@ -190,6 +210,8 @@ export default function Dashboard() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+
+          {/* Threat Types */}
           <div className="p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
             <h4 className="mb-4 font-semibold text-gray-800 dark:text-gray-300">Threat Types</h4>
             <ResponsiveContainer width="100%" height={300}>
@@ -212,6 +234,8 @@ export default function Dashboard() {
               </PieChart>
             </ResponsiveContainer>
           </div>
+
+          {/* Security Coverage */}
           <div className="p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
             <h4 className="mb-4 font-semibold text-gray-800 dark:text-gray-300">Security Coverage</h4>
             <ResponsiveContainer width="100%" height={300}>
@@ -254,68 +278,87 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
 
+          {/* Cybersecurity Threat Landscape */}
           <div className="p-6 bg-white rounded-lg shadow-lg dark:bg-gray-800">
-          <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-gray-300">
-            Cybersecurity Threat Landscape
-          </h4>
-          <ResponsiveContainer width="100%" height={300}>
-            <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
-              <XAxis
-                type="number"
-                dataKey="x"
-                name="Severity"
-                tick={{ fill: "#a0aec0", fontSize: 12 }}
-                label={{ value: "Threat Severity", position: "insideBottom", offset: -5, fill: "#a0aec0" }}
-              />
-              <YAxis
-                type="number"
-                dataKey="y"
-                name="Impact"
-                tick={{ fill: "#a0aec0", fontSize: 12 }}
-                label={{ value: "Threat Impact", angle: -90, position: "insideLeft", fill: "#a0aec0" }}
-              />
-              <ZAxis
-                type="number"
-                dataKey="z"
-                name="Threat Size"
-                range={[100, 500]}
-              />
-              <Tooltip
-                cursor={{ strokeDasharray: "3 3" }}
-                formatter={(value, name) => `${value} (${name})`}
-              />
-              <Legend
-                verticalAlign="top"
-                wrapperStyle={{ color: "#a0aec0", fontSize: 12 }}
-              />
-              <Scatter
-                name="Threat Data Points"
-                data={scatterData}
-                fill="#e53e3e"
-                shape="circle"
-              />
-            </ScatterChart>
-          </ResponsiveContainer>
-        </div>
-
-          <div className="p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
-              <h4 className="mb-4 font-semibold text-gray-800 dark:text-gray-300">Mitigations vs Active Alerts</h4>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={lineData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="Mitigations" stroke="#8884d8" />
-                  <Line type="monotone" dataKey="Active" stroke="#82ca9d" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-gray-300">
+              Cybersecurity Threat Landscape
+            </h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+                <XAxis
+                  type="number"
+                  dataKey="x"
+                  name="Severity"
+                  tick={{ fill: "#a0aec0", fontSize: 12 }}
+                  label={{ value: "Threat Severity", position: "insideBottom", offset: -5, fill: "#a0aec0" }}
+                />
+                <YAxis
+                  type="number"
+                  dataKey="y"
+                  name="Impact"
+                  tick={{ fill: "#a0aec0", fontSize: 12 }}
+                  label={{ value: "Threat Impact", angle: -90, position: "insideLeft", fill: "#a0aec0" }}
+                />
+                <ZAxis
+                  type="number"
+                  dataKey="z"
+                  name="Threat Size"
+                  range={[100, 500]}
+                />
+                <Tooltip
+                  cursor={{ strokeDasharray: "3 3" }}
+                  formatter={(value, name) => `${value} (${name})`}
+                />
+                <Legend
+                  verticalAlign="top"
+                  wrapperStyle={{ color: "#a0aec0", fontSize: 12 }}
+                />
+                <Scatter
+                  name="Threat Data Points"
+                  data={scatterData}
+                  fill="#e53e3e"
+                  shape="circle"
+                />
+              </ScatterChart>
+            </ResponsiveContainer>
           </div>
 
+          {/* Mitigations vs Active Alerts */}
           <div className="p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
+            <h4 className="mb-4 font-semibold text-gray-800 dark:text-gray-300">Mitigations vs Active Alerts</h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={lineData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="Mitigations" stroke="#8884d8" />
+                <Line type="monotone" dataKey="Active" stroke="#82ca9d" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Threat Trends Over Time */}
+          <div className="p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
+            <h4 className="mb-4 font-semibold text-gray-800 dark:text-gray-300">Threat Trends Over Time</h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={areaData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Area type="monotone" dataKey="Threats" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
+                <Area type="monotone" dataKey="Mitigations" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.3} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Attack Locations */}
+        <div className="p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
           <h4 className="mb-4 font-semibold text-gray-800 dark:text-gray-300">Attack Locations</h4>
           <MapContainer
             center={[51.505, -0.09]}
@@ -340,4 +383,3 @@ export default function Dashboard() {
     </Layout>
   );
 }
-
