@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  oxsuite:
+    build: .
+    ports:
+      - "3000:3000"
+      - "8000:8000"
+    environment:
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=your-nextauth-secret-here
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+      - GEMINI_API_KEY=your-gemini-api-key-here
+      - SECRET_KEY=your-jwt-secret-key-here
+    volumes:
+      - ./.env.local:/app/.env.local
+      - ./backend/.env:/app/backend/.env

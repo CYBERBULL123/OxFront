@@ -33,7 +33,16 @@ import {
 } from 'recharts';
 import { Shield, AlertTriangle, CheckCircle, Activity, Globe, Users, Server, Clock } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
+// Import Leaflet directly
 import L from 'leaflet';
+// Using type imports directly from leaflet
+import type { LatLngExpression } from 'leaflet';
+
+// Import security widgets
+import RecentCVEsWidget from '@/components/RecentCVEsWidget';
+import SecurityMetricsWidget from '@/components/SecurityMetricsWidget';
+import SecurityAlertsWidget from '@/components/SecurityAlertsWidget';
+import SecurityScansManager from '@/components/SecurityScansManager';
 
 const Layout = dynamic(() => import('../../components/Layout'), { ssr: false });
 const MapContainer = dynamic(() => import('react-leaflet').then((mod) => mod.MapContainer), { ssr: false });
@@ -128,12 +137,13 @@ const attackLocations = [
 ];
 
 // Custom Icon
-const attackIcon = new L.Icon({
-  iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg', // Replace with your custom icon URL
-  iconSize: [32, 32],
+// Create a custom attack icon for the map
+const attackIcon = L.icon ? L.icon({
+  iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg',
+  iconSize: [32, 32], 
   iconAnchor: [16, 32],
   popupAnchor: [0, -32],
-});
+}) : null;
 
 export default function Dashboard() {
   const [isBrowser, setIsBrowser] = useState(false);
@@ -357,18 +367,37 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Security Widgets Section */}
+        <div className="grid gap-6 mb-8 md:grid-cols-2">
+          {/* Security Metrics Widget */}
+          <SecurityMetricsWidget />
+          
+          {/* Security Alerts Widget */}
+          <SecurityAlertsWidget />
+          
+          {/* Recent CVEs Widget */}
+          <RecentCVEsWidget />
+          
+          {/* Security Scans Manager Widget */}
+          <SecurityScansManager />
+        </div>
+
         {/* Attack Locations */}
         <div className="p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
           <h4 className="mb-4 font-semibold text-gray-800 dark:text-gray-300">Attack Locations</h4>
           <MapContainer
-            center={[51.505, -0.09]}
+            center={[51.505, -0.09] as LatLngExpression}
             zoom={2}
             style={{ height: '500px', width: '100%', zIndex: 0 }}
             className="rounded-lg"
           >
             <TileLayer url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png" />
             {attackLocations.map((loc, index) => (
-              <Marker key={index} position={[loc.lat, loc.lng]} icon={attackIcon}>
+              <Marker 
+                key={index} 
+                position={[loc.lat, loc.lng] as LatLngExpression} 
+                icon={attackIcon}
+              >
                 <Popup>
                   <strong>{loc.name}</strong>
                   <br />

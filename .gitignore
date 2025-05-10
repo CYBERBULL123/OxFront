@@ -27,8 +27,37 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env
+backend/.env
 
 # vercel
+.vercel
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Docker
+docker-compose.override.yml
 .vercel
 
 # typescript

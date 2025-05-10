@@ -3,7 +3,11 @@
 import React from 'react'
 import Layout from '../../../components/Layout'
 import { motion } from 'framer-motion'
-import { Brain, Shield, AlertTriangle, Search, Info, Settings } from 'lucide-react'
+import { 
+  Brain, Shield, AlertTriangle, Search, Info, Settings, 
+  Globe, FileText, Database, Code, MessageSquare, ExternalLink, Server
+} from 'lucide-react'
+import Link from 'next/link'
 
 export default function OxIntellDocs() {
   return (
@@ -14,66 +18,138 @@ export default function OxIntellDocs() {
         transition={{ duration: 0.5 }}
         className="max-w-4xl mx-auto"
       >
-        <h2 className="text-3xl font-semibold text-gray-800 dark:text-white mb-6">OxIntell Documentation</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-3xl font-semibold text-gray-800 dark:text-white">OxIntell Documentation</h2>
+          <Link 
+            href="/oxintell" 
+            className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            <Brain className="mr-2 w-5 h-5" />
+            Open OxIntell
+          </Link>
+        </div>
 
         {/* Overview Section */}
-        <section className="mb-8">
+        <section className="mb-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
           <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
             <Info className="mr-2 w-5 h-5 text-gray-600 dark:text-gray-400" />
             Overview
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            OxIntell is an advanced threat intelligence and analysis platform powered by AI. It provides real-time insights into potential security threats and helps organizations stay ahead of cyber attacks. The platform integrates seamlessly with existing security infrastructures to provide actionable insights.
+            OxIntell is an advanced cybersecurity analysis and threat intelligence platform powered by AI. It provides comprehensive security insights through domain analysis, file scanning, CVE tracking, code security scanning, and AI-assisted security chat. The platform helps organizations identify, assess, and mitigate security threats proactively.
           </p>
         </section>
 
         {/* Key Features Section */}
-        <section className="mb-8">
+        <section className="mb-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
           <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
             <Brain className="mr-2 w-5 h-5 text-gray-600 dark:text-gray-400" />
             Key Features
           </h3>
-          <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-2">
-            <li>Real-time threat detection and analysis</li>
-            <li>AI-powered risk assessment and insights</li>
-            <li>Comprehensive threat intelligence database</li>
-            <li>Customizable alerts and notifications</li>
-            <li>Integration with existing security infrastructure</li>
-          </ul>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div className="flex items-center mb-2">
+                <Globe className="w-5 h-5 text-blue-500 mr-2" />
+                <h4 className="font-medium text-gray-700 dark:text-gray-300">Domain Analysis</h4>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Analyze domain reputation, WHOIS information, DNS records, and open ports to identify potential security risks and vulnerabilities.
+              </p>
+            </div>
+            
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div className="flex items-center mb-2">
+                <FileText className="w-5 h-5 text-red-500 mr-2" />
+                <h4 className="font-medium text-gray-700 dark:text-gray-300">File Analysis</h4>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Scan files for malware, trojans, and other malicious content using advanced threat detection engines and machine learning.
+              </p>
+            </div>
+            
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div className="flex items-center mb-2">
+                <Database className="w-5 h-5 text-yellow-500 mr-2" />
+                <h4 className="font-medium text-gray-700 dark:text-gray-300">CVE Tracking</h4>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Monitor and analyze Common Vulnerabilities and Exposures (CVEs) with detailed information about severity, affected systems, and remediation steps.
+              </p>
+            </div>
+            
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div className="flex items-center mb-2">
+                <Code className="w-5 h-5 text-green-500 mr-2" />
+                <h4 className="font-medium text-gray-700 dark:text-gray-300">Code Security Scanning</h4>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Identify security vulnerabilities, bugs, and best practice violations in source code across multiple programming languages.
+              </p>
+            </div>
+            
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div className="flex items-center mb-2">
+                <MessageSquare className="w-5 h-5 text-purple-500 mr-2" />
+                <h4 className="font-medium text-gray-700 dark:text-gray-300">Security Chat</h4>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Get expert security advice and answers to cybersecurity questions through an AI-powered security assistant.
+              </p>
+            </div>
+            
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div className="flex items-center mb-2">
+                <Shield className="w-5 h-5 text-indigo-500 mr-2" />
+                <h4 className="font-medium text-gray-700 dark:text-gray-300">Real-time Monitoring</h4>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Track the latest security threats, vulnerabilities, and updates with real-time monitoring and alerts.
+              </p>
+            </div>
+          </div>
         </section>
 
-        {/* Technical Details Section */}
-        <section className="mb-8">
+        {/* Automated Security Scanning Section */}
+        <section className="mb-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
           <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
-            <Shield className="mr-2 w-5 h-5 text-gray-600 dark:text-gray-400" />
-            Technical Specifications
+            <Server className="mr-2 w-5 h-5 text-gray-600 dark:text-gray-400" />
+            Automated Security Scanning
           </h3>
-          <table className="min-w-full table-auto border-collapse text-sm text-left text-gray-600 dark:text-gray-400">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-600">
-                <th className="py-2 px-4">Feature</th>
-                <th className="py-2 px-4">Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b border-gray-200 dark:border-gray-600">
-                <td className="py-2 px-4 font-semibold">Threat Detection</td>
-                <td className="py-2 px-4">Uses AI to detect real-time threats and classify them by risk level.</td>
-              </tr>
-              <tr className="border-b border-gray-200 dark:border-gray-600">
-                <td className="py-2 px-4 font-semibold">Risk Assessment</td>
-                <td className="py-2 px-4">AI-powered insights to assess risk levels and potential impact of identified threats.</td>
-              </tr>
-              <tr className="border-b border-gray-200 dark:border-gray-600">
-                <td className="py-2 px-4 font-semibold">Custom Alerts</td>
-                <td className="py-2 px-4">Set up customized alerts based on specific security concerns and threat levels.</td>
-              </tr>
-              <tr className="border-b border-gray-200 dark:border-gray-600">
-                <td className="py-2 px-4 font-semibold">Database Integration</td>
-                <td className="py-2 px-4">Integrates seamlessly with existing databases to enhance threat intelligence capabilities.</td>
-              </tr>
-            </tbody>
-          </table>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            OxInteLL provides automated security scanning functionality that allows you to schedule regular security scans for domains, code repositories, and systems. This helps you proactively identify and address security vulnerabilities before they can be exploited.
+          </p>
+          
+          <div className="space-y-4 mt-6">
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Scheduling Options</h4>
+              <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-2">
+                <li>Hourly scans for critical infrastructure</li>
+                <li>Daily scans for production environments</li>
+                <li>Weekly scans for development environments</li>
+                <li>Monthly comprehensive security audits</li>
+              </ul>
+            </div>
+            
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Scan Types</h4>
+              <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-2">
+                <li><strong>Domain Scans</strong>: Monitor domain reputation, check for security misconfigurations, and identify potential threats</li>
+                <li><strong>Code Repository Scans</strong>: Analyze code for security vulnerabilities, bugs, and compliance issues</li>
+                <li><strong>System Vulnerability Scans</strong>: Identify vulnerabilities in systems, networks, and applications</li>
+              </ul>
+            </div>
+            
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Features</h4>
+              <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-2">
+                <li>Email notifications for scan results</li>
+                <li>Detailed security reports with severity ratings</li>
+                <li>Historical scan data for trend analysis</li>
+                <li>Integration with incident response workflows</li>
+                <li>Custom scan parameters for specific security requirements</li>
+              </ul>
+            </div>
+          </div>
         </section>
 
         {/* How to Use Section */}

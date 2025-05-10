@@ -1,0 +1,9 @@
+Collecting wheel
+  Using cached wheel-0.45.1-py3-none-any.whl.metadata (2.3 kB)
+Collecting setuptools
+  Using cached setuptools-80.4.0-py3-none-any.whl.metadata (6.5 kB)
+Using cached wheel-0.45.1-py3-none-any.whl (72 kB)
+Using cached setuptools-80.4.0-py3-none-any.whl (1.2 MB)
+Installing collected packages: wheel, setuptools
+
+Successfully installed setuptools-80.4.0 wheel-0.45.1

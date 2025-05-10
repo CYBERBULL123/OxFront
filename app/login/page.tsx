@@ -3,18 +3,39 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Lock, Shield, User } from 'lucide-react';
+import { Lock, Shield, User, AlertCircle } from 'lucide-react';
+import { signIn } from 'next-auth/react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Implement login logic here
-    // For now, we'll just redirect to the dashboard
-    router.push('/dashboard');
+    setError('');
+    setIsLoading(true);
+    
+    try {
+      const result = await signIn('credentials', {
+        username,
+        password,
+        redirect: false,
+      });
+      
+      if (result?.error) {
+        setError('Invalid username or password');
+      } else {
+        router.push('/dashboard');
+      }
+    } catch (error) {
+      setError('An unexpected error occurred');
+      console.error('Login error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const navigateToSignUp = () => {
@@ -54,12 +75,18 @@ export default function LoginPage() {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-white">Sign in to OxSuite</h2>
           <p className="mt-2 text-sm text-gray-300">Secure your digital world with OxSuite</p>
         </div>
+        {error && (
+          <div className="flex items-center p-4 text-sm text-red-400 border border-red-500/30 rounded-md bg-red-500/10">
+            <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <input type="hidden" name="remember" defaultValue="true" />
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email address
+              <label htmlFor="username" className="sr-only">
+                Username
               </label>
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
@@ -67,15 +94,15 @@ export default function LoginPage() {
                 transition={{ delay: 0.4, duration: 0.5 }}
               >
                 <input
-                  id="email-address"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
                   required
                   className="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-700 placeholder-gray-400 text-white bg-gray-900/50 rounded-t-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                 />
               </motion.div>
             </div>
