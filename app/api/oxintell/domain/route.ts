@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const apiUrl = `${process.env.BACKEND_URL}/api/oxintell/domain`;
+    const apiUrl = `${process.env.BACKEND_URL}/api/oxintell/domain-analysis`;
     
     const response = await fetch(apiUrl, {
       method: 'POST',

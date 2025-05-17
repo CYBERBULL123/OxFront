@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Home, Brain, Image, Database, Menu, X, LogOut, User, BarChart2, Moon, Sun, BookOpen } from 'lucide-react'
+import { logout } from '@/lib/api' // Import logout function
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -31,9 +32,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { name: 'Documentation', icon: BookOpen, href: '/docs' },
   ]
 
-  const handleLogout = () => {
-    // Implement logout logic here
-    router.push('/login')
+  const handleLogout = async () => {
+    // Use our logout function to clear tokens and redirect
+    await logout();
+    // The logout function already handles the redirect
   }
 
   return (

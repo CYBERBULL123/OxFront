@@ -1,9 +1,10 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { useSession } from 'next-auth/react'
 import { Shield, AlertTriangle, Lock } from 'lucide-react'
 import Link from 'next/link'
+import { useAuth } from './AuthProvider' // Import our custom auth hook
+import { getToken } from '@/lib/api' // Import getToken to check authentication
 
 // Define security permission levels
 export enum SecurityPermission {
@@ -26,12 +27,13 @@ const SecurityPermissionCheck: React.FC<SecurityPermissionCheckProps> = ({
   children,
   fallback
 }) => {
-  const { data: session } = useSession()
+  // Use our custom auth hook instead of useSession
+  const { isAuthenticated, loading: authLoading } = useAuth()
   const [hasPermission, setHasPermission] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(true)
 
   useEffect(() => {
-    if (!session) {
+    if (!isAuthenticated) {
       setHasPermission(false)
       setLoading(false)
       return
@@ -46,7 +48,9 @@ const SecurityPermissionCheck: React.FC<SecurityPermissionCheckProps> = ({
 
         // Mock user permissions based on user role
         // In a real application, this would come from the API
-        const userRole = session?.user?.role || 'user'
+        // Since we don't have session.user.role anymore, we'll default to 'user'
+        // In a real app, you would fetch the user's role from your API
+        const userRole = 'user' // Default role until we implement proper role management
         const userPermissions = getUserPermissions(userRole)
         
         // Check if the user has the required permission(s)
@@ -64,7 +68,7 @@ const SecurityPermissionCheck: React.FC<SecurityPermissionCheckProps> = ({
     }
 
     checkPermissions()
-  }, [session, requiredPermission])
+  }, [isAuthenticated, requiredPermission])
 
   // Function to get user permissions based on role
   const getUserPermissions = (role: string): SecurityPermission[] => {

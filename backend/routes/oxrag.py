@@ -10,7 +10,7 @@ import io
 from PyPDF2 import PdfReader
 from bs4 import BeautifulSoup
 import requests
-from main import get_current_active_user, User
+from auth import get_current_active_user, User
 import re
 import json
 from google.api_core.exceptions import GoogleAPIError

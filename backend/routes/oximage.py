@@ -5,7 +5,7 @@ import os
 import google.generativeai as genai
 from PIL import Image
 import io
-from main import get_current_active_user, User
+from auth import get_current_active_user, User
 from google.api_core.exceptions import GoogleAPIError
 import base64
 

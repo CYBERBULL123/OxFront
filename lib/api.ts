@@ -1,7 +1,56 @@
 import axios from 'axios';
-import { getSession } from 'next-auth/react';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+
+// Helper functions for token management
+export const storeToken = async (token: string): Promise<void> => {
+  // Store in localStorage for client-side access
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('authToken', token);
+  }
+  
+  // Also set it as an HTTP-only cookie for server-side access (middleware)
+  try {
+    await fetch('/api/auth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token }),
+    });
+  } catch (error) {
+    console.error('Failed to set auth cookie:', error);
+  }
+};
+
+export const getToken = (): string | null => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('authToken');
+  }
+  return null;
+};
+
+export const removeToken = async (): Promise<void> => {
+  // Remove from localStorage
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('authToken');
+  }
+  
+  // Remove the HTTP-only cookie
+  try {
+    await fetch('/api/auth/token', {
+      method: 'DELETE',
+    });
+  } catch (error) {
+    console.error('Failed to remove auth cookie:', error);
+  }
+};
+
+// Logout function
+export const logout = async (): Promise<void> => {
+  await removeToken();
+  window.location.href = '/login';
+};
 
 // Create axios instance
 const api = axios.create({
@@ -12,22 +61,27 @@ const api = axios.create({
 });
 
 // Add a request interceptor to include the auth token
-api.interceptors.request.use(async (config) => {
-  const session = await getSession();
-  if (session?.accessToken) {
-    config.headers.Authorization = `Bearer ${session.accessToken}`;
+api.interceptors.request.use(
+  (config) => { // Simplified type for config, relying on inference
+    const token = getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  return config;
-});
+);
 
 // Authentication
-export const login = async (username: string, password: string) => {
+export const login = async (username: string, password: string): Promise<{ access_token: string }> => {
   const formData = new URLSearchParams();
   formData.append('username', username);
   formData.append('password', password);
 
   try {
-    const response = await axios.post(`${API_BASE_URL}/token`, formData, {
+    const response = await axios.post<{ access_token: string }>(`${API_BASE_URL}/token`, formData, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
@@ -138,7 +192,7 @@ export const analyzeQuery = async (query: string): Promise<string> => {
 
 export const analyzeDomain = async (domain: string): Promise<any> => {
   try {
-    const response = await api.post('/api/oxintell/domain', { domain });
+    const response = await api.post('/api/oxintell/domain-analysis', { domain });
     return response.data;
   } catch (error) {
     console.error('Error in analyzeDomain:', error);
@@ -273,6 +327,20 @@ export const runImmediateScan = async (scanConfig: {
     return response.data;
   } catch (error) {
     console.error('Error in runImmediateScan:', error);
+    throw error;
+  }
+};
+
+// User Management
+export const getCurrentUser = async () => {
+  try {
+    const response = await api.get('/api/users/me'); 
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching current user:', error);
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      removeToken();
+    }
     throw error;
   }
 };

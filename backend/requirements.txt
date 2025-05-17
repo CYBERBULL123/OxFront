@@ -13,6 +13,7 @@ certifi
 charset-normalizer
 chardet
 click
+crewai>=0.30.0
 dataclasses-json
 deep-translator
 distro
@@ -29,6 +30,9 @@ google-generativeai
 google-genai
 googleapis-common-protos
 greenlet
+langchain>=0.1.0
+langchain-google-genai
+langchain-openai
 grpcio
 grpcio-status
 gtts

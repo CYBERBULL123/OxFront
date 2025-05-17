@@ -11,7 +11,7 @@ import { motion } from 'framer-motion'
 import { 
   Search, Shield, AlertTriangle, CheckCircle, Globe, FileText, 
   Code, MessageSquare, Database, Upload, ArrowRight, Info, 
-  ChevronDown, ChevronUp, ExternalLink, Server, Lock
+  ChevronDown, ChevronUp, ExternalLink, Server, Lock, History
 } from 'lucide-react'
 import { 
   analyzeQuery, analyzeDomain, scanFile, getCVEInfo, 
@@ -27,12 +27,37 @@ interface ChatMessage {
 
 interface DomainResult {
   domain: string
-  whois_info: any
-  dns_records: any
-  open_ports: any[]
+  whois_info: {
+    registrar: string
+    creation_date: string
+    expiration_date: string
+    domain_age?: number
+    registrant_country?: string
+  }
+  dns_records: {
+    a: string[]
+    mx: string[]
+    ns?: string[]
+    txt: string[]
+  }
+  ssl_info?: {
+    valid_from: string
+    valid_to: string
+    issuer: string
+    subject: string
+  } | null
+  open_ports: {
+    port: number
+    protocol: string
+    service: string
+    is_secure: boolean
+    description: string
+    security_risk: string
+  }[]
   security_score: number
   is_malicious: boolean
   recommendations: string[]
+  raw_data?: any
 }
 
 interface FileResult {
@@ -87,6 +112,21 @@ const OxIntell: React.FC = () => {
   const [domain, setDomain] = useState('')
   const [domainResult, setDomainResult] = useState<DomainResult | null>(null)
   const [expandedPort, setExpandedPort] = useState<number | null>(null)
+  const [domainHistory, setDomainHistory] = useState<{domain: string, timestamp: string, result: DomainResult}[]>([])
+  
+  // Load domain history from session storage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedHistory = sessionStorage.getItem('domainAnalysisHistory')
+      if (savedHistory) {
+        try {
+          setDomainHistory(JSON.parse(savedHistory))
+        } catch (e) {
+          console.error('Error parsing domain history:', e)
+        }
+      }
+    }
+  }, [])
   
   // File analysis states
   const [file, setFile] = useState<File | null>(null)
@@ -113,7 +153,125 @@ const OxIntell: React.FC = () => {
     setLoading(true)
     try {
       const result = await analyzeDomain(domain)
-      setDomainResult(result)
+      
+      // Calculate security score based on various factors
+      let securityScore = 75; // Default score
+      
+      // Adjust score based on SSL certificate presence
+      if (result.raw_data?.ssl_info) {
+        securityScore += 10;
+      } else {
+        securityScore -= 15;
+      }
+      
+      // Adjust score based on open ports
+      const portCount = Object.keys(result.raw_data?.port_scan || {}).length;
+      if (portCount > 5) {
+        securityScore -= 10;
+      } else if (result.raw_data?.port_scan?.['443']) {
+        securityScore += 5; // HTTPS is good
+      }
+      
+      // Keep score in valid range
+      securityScore = Math.min(100, Math.max(0, securityScore));
+      
+      // Determine if site is potentially malicious based on score
+      const isMalicious = securityScore < 50;
+      
+      // Generate security recommendations based on findings
+      const recommendations = [];
+      
+      if (!result.raw_data?.ssl_info) {
+        recommendations.push('Implement SSL/TLS for secure connections');
+      } else {
+        const notAfterDate = new Date(result.raw_data.ssl_info.notAfter);
+        const now = new Date();
+        const daysDifference = Math.floor((notAfterDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysDifference < 30) {
+          recommendations.push(`Renew SSL certificate soon (expires in ${daysDifference} days)`);
+        }
+      }
+      
+      if (result.raw_data?.port_scan?.['80'] && !result.raw_data?.port_scan?.['443']) {
+        recommendations.push('Enable HTTPS for all web traffic');
+      }
+      
+      if (Object.keys(result.raw_data?.port_scan || {}).length > 0) {
+        recommendations.push('Review open ports and close unnecessary services');
+        recommendations.push('Implement a firewall to restrict access to essential services only');
+      }
+      
+      recommendations.push('Regularly monitor for suspicious activity');
+      
+      // Extract registrar information from the nested WhoisRecord structure
+      let registrar = result.raw_data?.whois?.WhoisRecord?.registrarName || 
+                       result.raw_data?.whois?.WhoisRecord?.registryData?.registrarName ||
+                       'Unknown';
+                       
+      // Extract creation and expiration dates
+      let creationDate = result.raw_data?.whois?.WhoisRecord?.registryData?.createdDate || 
+                         result.raw_data?.whois?.WhoisRecord?.createdDate ||
+                         '';
+                         
+      let expirationDate = result.raw_data?.whois?.WhoisRecord?.registryData?.expiresDate || 
+                           result.raw_data?.whois?.WhoisRecord?.expiresDate ||
+                           '';
+      
+      // Transform DNS record data for display
+      const cleanDnsRecords = (records: string[] | undefined) => {
+        if (!records) return [];
+        return records.filter(record => !record.startsWith('  - IP:') && record);
+      };
+      
+      // Transform the backend response to match our frontend's expected structure
+      const transformedResult: DomainResult = {
+        domain: result.domain,
+        whois_info: {
+          registrar: registrar,
+          creation_date: creationDate,
+          expiration_date: expirationDate,
+          domain_age: result.raw_data?.whois?.WhoisRecord?.estimatedDomainAge || 0,
+          registrant_country: result.raw_data?.whois?.WhoisRecord?.registryData?.registrant?.country || 'Unknown',
+        },
+        dns_records: {
+          a: result.raw_data?.ip_info?.A_Records || [],
+          mx: cleanDnsRecords(result.raw_data?.ip_info?.MX_Records) || [],
+          ns: cleanDnsRecords(result.raw_data?.ip_info?.NS_Records) || [],
+          txt: result.raw_data?.ip_info?.TXT_Records || [],
+        },
+        ssl_info: result.raw_data?.ssl_info ? {
+          valid_from: result.raw_data.ssl_info.notBefore || '',
+          valid_to: result.raw_data.ssl_info.notAfter || '',
+          issuer: result.raw_data.ssl_info.issuer?.organizationName || 'Unknown',
+          subject: result.raw_data.ssl_info.subject?.commonName || '',
+        } : null,
+        open_ports: Object.entries(result.raw_data?.port_scan || {}).map(([port, info]: [string, any]) => ({
+          port: parseInt(port),
+          protocol: info.protocol || 'Unknown',
+          service: info.name || 'Unknown',
+          is_secure: port === '443',
+          description: info.description || '',
+          security_risk: info.vulnerabilities || info.causes || '',
+        })),
+        security_score: securityScore,
+        is_malicious: isMalicious,
+        recommendations: recommendations,
+        raw_data: result.raw_data, // Keep raw data for debugging or advanced info
+      };
+      
+      // Store the domain analysis in session storage for history
+      const domainHistory = JSON.parse(sessionStorage.getItem('domainAnalysisHistory') || '[]');
+      domainHistory.unshift({ 
+        domain: domain, 
+        timestamp: new Date().toISOString(),
+        result: transformedResult
+      });
+      // Keep only the last 10 records
+      if (domainHistory.length > 10) domainHistory.pop();
+      sessionStorage.setItem('domainAnalysisHistory', JSON.stringify(domainHistory));
+      
+      setDomainResult(transformedResult)
       toast.success('Domain analysis completed')
     } catch (error) {
       console.error('Error analyzing domain:', error)
@@ -248,38 +406,50 @@ const OxIntell: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6"
+        className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-4 md:p-6 max-w-[1200px] mx-auto"
       >
+        <div className="flex items-center mb-6">
+          <div className="bg-blue-500 text-white p-2 rounded-lg mr-3">
+            <Shield size={28} />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-blue-400">
+            OxInteLL Cybersecurity Suite
+          </h1>
+        </div>
         <h1 className="text-3xl font-bold mb-6 text-blue-400 flex items-center">
           <Shield className="mr-3" size={32} />
           OxInteLL Cybersecurity Suite
         </h1>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-8">
-            <TabsTrigger value="domain" className="flex items-center justify-center p-2">
-              <Globe className="mr-1 flex-shrink-0" size={16} />
-              <span className="text-xs sm:text-sm truncate">Domain</span>
+          <TabsList className="flex flex-row flex-nowrap md:flex-wrap overflow-x-auto bg-transparent dark:bg-slate-800/30 p-1 mb-8 rounded-lg gap-1">
+            <TabsTrigger value="domain" className="flex items-center px-3 py-2 whitespace-nowrap data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+              <Globe className="mr-2" size={18} />
+              <span className="text-sm">Domain</span>
             </TabsTrigger>
-            <TabsTrigger value="file" className="flex items-center justify-center p-2">
-              <FileText className="mr-1 flex-shrink-0" size={16} />
-              <span className="text-xs sm:text-sm truncate">File</span>
+            <TabsTrigger value="history" className="flex items-center px-3 py-2 whitespace-nowrap">
+              <History className="mr-2" size={18} />
+              <span className="text-sm">History</span>
             </TabsTrigger>
-            <TabsTrigger value="cve" className="flex items-center justify-center p-2">
-              <Database className="mr-1 flex-shrink-0" size={16} />
-              <span className="text-xs sm:text-sm truncate">CVE</span>
+            <TabsTrigger value="file" className="flex items-center px-3 py-2 whitespace-nowrap">
+              <FileText className="mr-2" size={18} />
+              <span className="text-sm">File</span>
             </TabsTrigger>
-            <TabsTrigger value="code" className="flex items-center justify-center p-2">
-              <Code className="mr-1 flex-shrink-0" size={16} />
-              <span className="text-xs sm:text-sm truncate">Code</span>
+            <TabsTrigger value="cve" className="flex items-center px-3 py-2 whitespace-nowrap">
+              <Database className="mr-2" size={18} />
+              <span className="text-sm">CVE</span>
             </TabsTrigger>
-            <TabsTrigger value="scans" className="flex items-center justify-center p-2">
-              <Server className="mr-1 flex-shrink-0" size={16} />
-              <span className="text-xs sm:text-sm truncate">Scans</span>
+            <TabsTrigger value="code" className="flex items-center px-3 py-2 whitespace-nowrap">
+              <Code className="mr-2" size={18} />
+              <span className="text-sm">Code</span>
             </TabsTrigger>
-            <TabsTrigger value="chat" className="flex items-center justify-center p-2">
-              <MessageSquare className="mr-1 flex-shrink-0" size={16} />
-              <span className="text-xs sm:text-sm truncate">Chat</span>
+            <TabsTrigger value="scans" className="flex items-center px-3 py-2 whitespace-nowrap">
+              <Server className="mr-2" size={18} />
+              <span className="text-sm">Scans</span>
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="flex items-center px-3 py-2 whitespace-nowrap">
+              <MessageSquare className="mr-2" size={18} />
+              <span className="text-sm">Chat</span>
             </TabsTrigger>
           </TabsList>
           
@@ -355,6 +525,18 @@ const OxIntell: React.FC = () => {
                           <span className="font-medium">{new Date(domainResult.whois_info.expiration_date).toLocaleDateString()}</span>
                         </div>
                       )}
+                      {domainResult.whois_info.domain_age !== undefined && (
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">Domain Age:</span>{' '}
+                          <span className="font-medium">{domainResult.whois_info.domain_age} days</span>
+                        </div>
+                      )}
+                      {domainResult.whois_info.registrant_country && (
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">Registrant Country:</span>{' '}
+                          <span className="font-medium">{domainResult.whois_info.registrant_country}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -362,19 +544,25 @@ const OxIntell: React.FC = () => {
                   <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
                     <h3 className="text-lg font-semibold mb-3">DNS Records</h3>
                     <div className="space-y-2">
-                      {domainResult.dns_records.a && (
+                      {domainResult.dns_records.a && domainResult.dns_records.a.length > 0 && (
                         <div>
                           <span className="text-gray-600 dark:text-gray-400">A Record:</span>{' '}
                           <span className="font-medium">{domainResult.dns_records.a.join(', ')}</span>
                         </div>
                       )}
-                      {domainResult.dns_records.mx && (
+                      {domainResult.dns_records.mx && domainResult.dns_records.mx.length > 0 && (
                         <div>
                           <span className="text-gray-600 dark:text-gray-400">MX Record:</span>{' '}
                           <span className="font-medium">{domainResult.dns_records.mx.join(', ')}</span>
                         </div>
                       )}
-                      {domainResult.dns_records.txt && (
+                      {domainResult.dns_records.ns && domainResult.dns_records.ns.length > 0 && (
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">NS Record:</span>{' '}
+                          <span className="font-medium">{domainResult.dns_records.ns.join(', ')}</span>
+                        </div>
+                      )}
+                      {domainResult.dns_records.txt && domainResult.dns_records.txt.length > 0 && (
                         <div>
                           <span className="text-gray-600 dark:text-gray-400">TXT Record:</span>{' '}
                           <span className="font-medium">{domainResult.dns_records.txt.join(', ')}</span>
@@ -384,38 +572,82 @@ const OxIntell: React.FC = () => {
                   </div>
                 </div>
                 
+                {domainResult.ssl_info && (
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow col-span-1 md:col-span-2 mb-6">
+                    <h3 className="text-lg font-semibold mb-3 flex items-center">
+                      <span className="inline-block w-6 h-6 rounded-full bg-green-500 mr-2 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      </span>
+                      SSL Certificate Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm">Subject:</p>
+                        <p className="font-medium">{domainResult.ssl_info.subject}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm">Issuer:</p>
+                        <p className="font-medium">{domainResult.ssl_info.issuer}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm">Valid From:</p>
+                        <p className="font-medium">{new Date(domainResult.ssl_info.valid_from).toLocaleDateString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm">Valid Until:</p>
+                        <p className="font-medium">{new Date(domainResult.ssl_info.valid_to).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Open Ports */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow mb-6">
                   <h3 className="text-lg font-semibold mb-3">Open Ports</h3>
-                  <div className="space-y-3">
-                    {domainResult.open_ports.map((port) => (
-                      <div key={port.port} className="border border-gray-200 dark:border-gray-600 rounded-lg p-3">
-                        <div 
-                          className="flex justify-between items-center cursor-pointer"
-                          onClick={() => setExpandedPort(expandedPort === port.port ? null : port.port)}
-                        >
-                          <div className="flex items-center">
-                            <span className={`inline-block w-3 h-3 rounded-full mr-3 ${port.is_secure ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                            <span className="font-medium">{port.port} / {port.protocol}</span>
-                            <span className="ml-3 text-gray-600 dark:text-gray-400">{port.service}</span>
+                  {domainResult.open_ports.length === 0 ? (
+                    <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                      No open ports detected
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {domainResult.open_ports.map((port) => (
+                        <div key={port.port} className="border border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                          <div 
+                            className="flex justify-between items-center cursor-pointer"
+                            onClick={() => setExpandedPort(expandedPort === port.port ? null : port.port)}
+                          >
+                            <div className="flex items-center">
+                              <span className={`inline-block w-3 h-3 rounded-full mr-3 ${port.is_secure ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                              <span className="font-medium">{port.port} / {port.protocol}</span>
+                              <span className="ml-3 text-gray-600 dark:text-gray-400">{port.service}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <span className={`text-xs px-2 py-0.5 rounded-full mr-2 ${
+                                port.is_secure ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
+                              }`}>
+                                {port.is_secure ? 'Secure' : 'Standard'}
+                              </span>
+                              {expandedPort === port.port ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </div>
                           </div>
-                          {expandedPort === port.port ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                          
+                          {expandedPort === port.port && (
+                            <div className="mt-3 pl-6 border-l-2 border-gray-200 dark:border-gray-600">
+                              {port.description && <p className="mb-2 text-gray-700 dark:text-gray-300">{port.description}</p>}
+                              {port.security_risk && (
+                                <div className="mt-2">
+                                  <span className="text-red-500 font-medium">Security Risk:</span>
+                                  <p className="text-gray-700 dark:text-gray-300">{port.security_risk}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        
-                        {expandedPort === port.port && (
-                          <div className="mt-3 pl-6 border-l-2 border-gray-200 dark:border-gray-600">
-                            {port.description && <p className="mb-2 text-gray-700 dark:text-gray-300">{port.description}</p>}
-                            {port.security_risk && (
-                              <div className="mt-2">
-                                <span className="text-red-500 font-medium">Security Risk:</span>
-                                <p className="text-gray-700 dark:text-gray-300">{port.security_risk}</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 
                 {/* Recommendations */}
@@ -431,6 +663,82 @@ const OxIntell: React.FC = () => {
                 )}
               </motion.div>
             )}
+          </TabsContent>
+          
+          {/* Domain Analysis History Tab */}
+          <TabsContent value="history">
+            <div className="p-4">
+              <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <History className="mr-2 text-blue-400" size={24} />
+                Domain Analysis History
+              </h2>
+              
+              {domainHistory.length === 0 ? (
+                <div className="bg-gray-100 dark:bg-gray-700 p-6 rounded-lg text-center">
+                  <p className="text-gray-500 dark:text-gray-400">No domain analysis history available</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {domainHistory.map((item, index) => (
+                    <div 
+                      key={index} 
+                      className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+                      onClick={() => {
+                        setDomain(item.domain);
+                        setDomainResult(item.result);
+                        setActiveTab('domain');
+                      }}
+                    >
+                      <div className="flex justify-between items-center mb-2">
+                        <div>
+                          <h3 className="font-medium text-blue-500 text-lg">{item.domain}</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Analyzed on {new Date(item.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium mb-1 ${
+                            item.result.is_malicious 
+                              ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-200' 
+                              : 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-200'
+                          }`}>
+                            {item.result.is_malicious ? 'Potentially Malicious' : 'Safe'}
+                          </span>
+                          <span className="text-sm font-medium">
+                            Score: <span className={
+                              item.result.security_score > 70 ? 'text-green-500' : 
+                              item.result.security_score > 40 ? 'text-yellow-500' : 
+                              'text-red-500'
+                            }>{item.result.security_score}/100</span>
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">Registrar:</span>{' '}
+                          <span className="text-gray-800 dark:text-gray-200">{item.result.whois_info.registrar || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">SSL:</span>{' '}
+                          <span className="text-gray-800 dark:text-gray-200">{item.result.ssl_info ? 'Valid' : 'Not detected'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">Open Ports:</span>{' '}
+                          <span className="text-gray-800 dark:text-gray-200">{item.result.open_ports.length}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">Created:</span>{' '}
+                          <span className="text-gray-800 dark:text-gray-200">
+                            {item.result.whois_info.creation_date ? new Date(item.result.whois_info.creation_date).toLocaleDateString() : 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </TabsContent>
           
           {/* File Analysis Tab */}

@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Lock, Shield, User, AlertCircle } from 'lucide-react';
-import { signIn } from 'next-auth/react';
+import { login, storeToken } from '@/lib/api'; // Import login and storeToken
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -12,6 +12,11 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const [dynamicInnerHeight, setDynamicInnerHeight] = useState(0);
+
+  useEffect(() => {
+    setDynamicInnerHeight(window.innerHeight);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,20 +24,22 @@ export default function LoginPage() {
     setIsLoading(true);
     
     try {
-      const result = await signIn('credentials', {
-        username,
-        password,
-        redirect: false,
-      });
+      // Call our login function directly
+      const result = await login(username, password);
       
-      if (result?.error) {
-        setError('Invalid username or password');
-      } else {
+      if (result && result.access_token) {
+        // Store the token in both localStorage and cookies
+        await storeToken(result.access_token);
+        console.log('Successfully logged in and stored token');
+        
+        // Redirect to dashboard
         router.push('/dashboard');
+      } else {
+        setError('Invalid username or password');
       }
     } catch (error) {
-      setError('An unexpected error occurred');
       console.error('Login error:', error);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -167,7 +174,7 @@ export default function LoginPage() {
           <motion.div
             key={i}
             initial={{ y: -10, x: Math.random() * 100 - 50, opacity: 0 }}
-            animate={{ y: window.innerHeight, x: Math.random() * 100 - 50, opacity: [0, 1, 0] }}
+            animate={{ y: dynamicInnerHeight, x: Math.random() * 100 - 50, opacity: [0, 1, 0] }}
             transition={{
               duration: Math.random() * 5 + 5,
               repeat: Infinity,
